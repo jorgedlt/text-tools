@@ -22,7 +22,7 @@
 
 # base32 with 5 group
  function base32-5 {
- base32 $1 | tr -d ' ' | fold -w 5 | tr '\012' ' ' | fold -s -w 50; echo             
+ base32en $1 | tr -d ' ' | fold -w 5 | tr '\012' ' ' | fold -s -w 50; echo             
 }
 # w=50 -> 8 columns & w=80 -> 13 columns
 
