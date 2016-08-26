@@ -37,6 +37,8 @@ $ base32-5 $(cat file.bin)
 # VDDZT O6UFM TESSE IGQ24 RN5T5 COTPK VWBMG LRUH2
 # 4O4DC ===
 
+# to send pem file -> cat pub.pem | grep -v '^--' | tr '\n' ' ' | tr -d ' ' # newlines, etc
+
 # base32 with 5 group
  function base32-5 {
  base32en $1 | tr -d ' ' | fold -w 5 | tr '\012' ' ' | fold -s -w 50; echo
