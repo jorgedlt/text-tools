@@ -5,11 +5,20 @@
 
 # source https://www.redspin.com/it-security-blog/2009/07/string-encoding-in-the-shell/
 
-# base32  
- function base32 {
+# base32en  
+ function base32en {
  printf "%s" ''; python -c "import base64; print base64.b32encode('''$1''')"
 }
-#
+
+# base32de  
+ function base32de {
+ printf "%s" ''; python -c "import base64; print base64.b32decode('''$1''')"
+}
+
+# $ base32en 'foobar'
+# MZXW6YTBOI======
+# $ base32de 'MZXW6YTBOI======'
+# foobar
 
 # base32 with 5 group
  function base32-5 {
@@ -17,10 +26,5 @@
 }
 # w=50 -> 8 columns & w=80 -> 13 columns
 
-# base64  
- function base64 {
- printf "%-20s" 'Base64:'; echo -n $1 | openssl enc -e -base64
-}
-#
 
 # http://www.lipsum.com/
