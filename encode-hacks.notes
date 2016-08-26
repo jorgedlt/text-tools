@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+# not mine - source
+# https://www.redspin.com/it-security-blog/2009/07/string-encoding-in-the-shell/
+
+if [ $# -ne 1 ]
+then
+  echo "Performs a number of encodings on the first argument string"
+  echo "Usage: `basename $0` {string}"
+  exit 1
+fi
+
+printf "\n# String Scrambles: \n"
+printf "%-20s" 'Normal:'; echo "$1"
+printf "%-20s" 'Reversed:'; echo "$1" | rev
+printf "%-20s" 'Case Reversed:'; echo "$1" | tr '[A-Z][a-z]' '[a-z][A-Z]'
+printf "%-20s" 'ROT13:'; echo "$1" | gcipher -c Rot -k 13
+#printf "%-20st" 'Rot13:' ; python -c "print '''$1'''.encode('rot13')"
+printf "%-20s" 'GIE:'; echo "$1" | gcipher -c Gie
+printf "%-20s" 'Caesar:'; echo "$1" | gcipher -c Ceasar
+printf "%-20s" 'Vigenere:'; echo "$1" | gcipher -c Vigenere -k vigenere
+# printf "%-20st" 'Anagrams:'; wordplay -s "$1" | sort -u | sed -n '1h;2,$H;${g;s/n/, /g;p}'
+# Due to both terminal and editor encodings, this is better executed on a non-UTF8 terminal:
+printf "%-20s" 'Leet (l334):'; echo "$1" | tr [a-z] [A-Z] | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' '4ß(Ð3ƒ9H1JK£MN0PQ®$7µVWX¥2' | sed 's_H_|-|_g;s_J__|_g;s_K_|{_g;s_M_|/|_g;s_N_||_g;s_P_|°_g;s_Q_¶¸_g;s_V_/_g;s_W_//_g;s_X_)(_g' #See http://www.albinoblacksheep.com/text/leet
+
+printf "n# Numerical Representations:n"
+printf "%-20s" 'INT:'; echo -n "$1" | hexdump -ve '/1 "%03i"'; echo
+printf "%-20s" 'HEX:'; echo -n "$1" | hexdump -ve '/1 "%02x"'; echo
+printf "%-20s" 'OCT:'; echo -n "$1" | hexdump -ve '/1 "%02o"'; echo
+printf "%-20s" 'BIN:'; echo -n "$1" | xxd -b -g0 -c0 | cut -b10-56 | tr -d 'n '; echo
+
+printf "n# Passwords:n"
+printf "%-20s" "CRYPT w/o SALT:"; echo -n "$1" | openssl passwd -crypt -stdin -salt 00
+printf "%-20s" "CRYPT w/ Random SALT:"; echo -n "$1" | openssl passwd -crypt -stdin
+printf "%-20s" "DES w/ CR SALT:"; echo -n "$1" | openssl passwd -crypt -stdin -salt CR
+printf "%-20s" "Shadow w/o SALT:"; echo -n "$1" | openssl passwd -1 -stdin -salt 00000000
+printf "%-20s" "Shadow w/ RANDOM SALT:"; echo -n "$1" | openssl passwd -1 -stdin
+printf "%-20s" "Apache w/o SALT:"; echo -n "$1" |  openssl passwd -apr1 -stdin -salt 00000000
+printf "%-20s" "Apache w/ RANDOM SALT:"; echo -n "$1" |  openssl passwd -apr1 -stdin
+printf "%-20s" "LM Password:"; python -c "import smbpasswd; print smbpasswd.lmhash("""$1""")" #requires python-smbpasswd
+printf "%-20s" "NTLM Password:"; python -c "import smbpasswd; print smbpasswd.nthash("""$1""")" #requires python-smbpasswd
+
+printf "n# Digest Hashes (newline not included):n"
+#printf "%-20st" 'BINARY MD5:' ; echo -n $1 | openssl dgst -binary
+printf "%-20s" 'MD5:'; echo -n $1 | openssl dgst -md5
+printf "%-20s" 'MD4:'; echo -n $1 | openssl dgst -md4
+printf "%-20s" 'MD2:'; echo -n $1 | openssl dgst -md2
+printf "%-20s" 'SHA1:'; echo -n $1 | openssl dgst -sha1
+printf "%-20s" 'SHA:'; echo -n $1 | openssl dgst -sha
+printf "%-20s" 'SHA224:'; echo -n $1 | openssl dgst -sha224
+printf "%-20s" 'SHA256:'; echo -n $1 | openssl dgst -sha256
+printf "%-20s" 'SHA384:'; echo -n $1 | openssl dgst -sha384
+printf "%-20s" 'SHA512:'; echo -n $1 | openssl dgst -sha512
+#printf "%-20st" 'MDC2:' ; echo -n $1 | openssl dgst -mdc2
+printf "%-20s" 'RIPEMD160:'; echo -n $1 | openssl dgst -ripemd160
+printf "%-20s" 'CRC32:'; python -c "import binascii; print binascii.crc32('''$1''') & 0xffffffff"
+
+printf "n# Web Encodingsn"
+printf "%-20s" 'URLQuote:'; python -c "import urllib; print urllib.quote('''$1''')"
+printf "%-20s" 'URLEscape:'; echo "$1" | recode ..HTML
+printf "%-20s" 'HTML HEX Entity:'; echo -n "$1" | hexdump -ve '/1 "&#x%02x;"'; echo
+printf "%-20s" 'HTML Entity:'; echo -n "$1" | hexdump -ve '/1 "&#%02i;"'; echo
+printf "%-20s" 'Javascript String'; echo -n "String.fromCharCode("; echo -n "$1" | hexdump -ve '/1 "%i,"' | sed 's_,$_)n_'
+printf "%-20s" 'SQL String'; echo -n $1 | hexdump -ve '/1 "char(%i)+"' | sed 's_+$_n_g'
+
+# printf "n# UTF Encodingsn"
+# printf "%-20s" 'UTF-7:'; echo $1 | iconv -t utf7
+# printf "%-20s" 'UTF-8:'; echo $1 | iconv -t utf8
+# printf "%-20s" 'UTF-16:'; echo $1 | iconv -t utf16
+# printf "%-20s" 'UTF-32:'; echo $1 | iconv -t utf32
+# printf "%-20s" 'Unicode:'; echo $1 | iconv -t unicode
+# printf "%-20s" 'ASCII:'; echo $1 | iconv -t ascii
+
+printf "n# Encodingsn" #http://docs.python.org/library/codecs.html#standard-encodings
+printf "%-20s" 'Base64:'; echo -n $1 | openssl enc -e -base64
+#printf "%-20st" 'Base64:'; python -c "import base64; print base64.b64encode('''$1''')"
+printf "%-20s" 'Base32:'; python -c "import base64; print base64.b32encode('''$1''')"
+printf "%-20s" 'Base16:'; python -c "import base64; print base64.b16encode('''$1''')"
+#printf "%-20st" 'UUEncode:'; python -c "print repr('''$1'''.encode('uu_codec'))"
+#printf "%-20st" 'UUEncode:';; echo -n $1 | hexdump -ve '/1 "#%02x"' | tr '#' '%'
+printf "%-20st" 'UUEncode:'; python -c "import binascii; print binascii.b2a_uu('''$1''')" | tr -s 'n'
+printf "%-20st" 'Punycode:' ; python -c "print '''$1'''.encode('punycode')"
+printf "%-20st" 'Mime Quotable:' ; python -c "print '''$1'''.encode('quopri_codec')"
+
+printf "n# Compression Encodingsn"
+#printf "%-20st" 'Bzip2:' ; python -c "print repr('''$1'''.encode('bz2_codec'))" | sed "s_^'(.*)'$_1_"
+#printf "%-20st" 'Zlib (gzip):' ; python -c "print repr('''$1'''.encode('zlib_codec'))" | sed "s_^'(.*)'$_1_"
+printf "%-20st" '7z:' ; echo -n "$1" | 7z a dummy -tgzip -si -so 2>/dev/null | hexdump -ve '/1 "%02x"'| sed "s_(..)_x1_g"; echo
+printf "%-20st" 'Bzip2:' ; echo -n "$1" | bzip2 -f | hexdump -ve '/1 "%02x"'| sed "s_(..)_x1_g"; echo
+printf "%-20st" 'GZip:' ; echo -n "$1" | gzip -f | hexdump -ve '/1 "%02x"'| sed "s_(..)_x1_g"; echo
+printf "%-20st" 'Zip:' ; echo -n "$1" | zip 2>/dev/null | hexdump -ve '/1 "%02x"'| sed "s_(..)_x1_g"; echo
+
+#printf "n# OpenSSL Ciphers with empty passphrase, key and iv:n"
+#for line in `openssl enc -h 2>&1 | sed -n '/Cipher Types/,//p' | grep -v -e "Cipher Types" -e "^$" | tr -s [:space:] 'n'`; do printf "%-20st" "$line:"; echo -n $1 | openssl enc -k "" -e -a -p -K 0 -iv 0 "$line" | sed -n '1h;2,$H;${g;s/n/, /g;p}'; done
+
+#printf "n# All iconv Output Encodings ~= 1153:n"
+#for line in `iconv -l`; do printf "%-20st" "$line"; echo -n $1 | iconv -t "$line" 2>/dev/null; echo; done
